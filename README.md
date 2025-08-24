@@ -1,0 +1,2 @@
+# micro_corn_diseases_detection
+repositorio de microproyecto
