@@ -1,27 +1,28 @@
 # 🌽 Análisis Exploratorio de Datos
-### Detección de Enfermedades en Cultivos de Maíz
+### Detección de enfermedades en cultivos de maíz
 
 Este documento presenta los hallazgos de la primera fase del proyecto, centrada en el análisis y la comprensión de los datos iniciales.
 
 ---
 
-## 📜 Problema y Contexto
+## 📜 Problema y contexto
+
 Las enfermedades del maíz, como la roya común, el tizón foliar y la mancha gris, representan una amenaza crítica para la seguridad alimentaria. El diagnóstico tradicional mediante inspección visual es un proceso lento, subjetivo y dependiente de la pericia del observador. Este proyecto busca validar la viabilidad de un sistema de diagnóstico automatizado mediante Inteligencia Artificial para superar estas limitaciones.
 
 ---
 
-## 📊 Dataset Inicial
+## 📊 Dataset inicial
 Para el análisis, se utilizó el dataset público **"Corn or Maize Leaf Disease Dataset"** de Kaggle, una compilación de imágenes de las fuentes PlantVillage y PlantDoc.
 
-* **Total de Imágenes:** 4,188
+* **Total de imágenes:** 4,188
 * **Formato:** JPEG (.jpg)
-* **Distribución de Clases (Inicial):**
+* **Distribución de clases (Inicial):**
     * Roya Común (Common Rust): 1,306 imágenes (31.2%)
     * Sana (Healthy): 1,162 imágenes (27.7%)
     * Tizón (Blight): 1,146 imágenes (27.4%)
     * Mancha Gris (Gray Leaf Spot): 574 imágenes (13.7%)
 
-> **Observación Clave:** El dataset inicial presenta un notable desbalance, con la clase **"Mancha Gris"** significativamente subrepresentada. Este hallazgo es fundamental para las siguientes etapas del proyecto.
+> **Observación:** El dataset inicial presenta un notable desbalance, con la clase **"Mancha Gris"** significativamente subrepresentada. Este hallazgo es fundamental para las siguientes etapas del proyecto.
 
 ---
 
