@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+python-multipart
+tensorflow-cpu
+numpy
+Pillow
+requests
+scikit-learn
+seaborn
+matplotlib
