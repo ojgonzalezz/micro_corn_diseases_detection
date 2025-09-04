@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 from dotenv import load_dotenv
 from PIL import Image
 import torch
+import tensorflow as tf
 
 ####################################
 # ---- System-related utilities ----
@@ -130,4 +131,25 @@ def plot_images(images, titles=None, cols=2, figsize=(10, 5)):
         plt.axis("off")
 
     plt.tight_layout()
+    plt.show()
+
+#####################################
+# ---- Data Augmentation Plotter ----
+#####################################
+
+def plot_augmented_images(generator):
+    """Función de utilidad para visualizar el efecto del Data Augmentation."""
+    print("\n🎨 Mostrando ejemplos de imágenes aumentadas del primer lote de entrenamiento:")
+    images, labels = next(generator)
+    
+    plt.figure(figsize=(12, 12))
+    for i in range(min(9, len(images))): # Asegura no exceder el tamaño del lote
+        ax = plt.subplot(3, 3, i + 1)
+        plt.imshow(images[i])
+        class_index = tf.argmax(labels[i]).numpy()
+        class_name = list(generator.class_indices.keys())[class_index]
+        plt.title(class_name)
+        plt.axis("off")
+    plt.suptitle("Visualización del Aumento de Datos en Tiempo Real", fontsize=16)
+    plt.tight_layout(rect=[0, 0, 1, 0.96])
     plt.show()
