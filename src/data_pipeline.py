@@ -19,14 +19,36 @@ def create_data_generators(base_dir, image_size=(224, 224), batch_size=32):
 
     print("🚀 Configurando generador de entrenamiento con aumento de datos...")
     train_datagen = tf.keras.preprocessing.image.ImageDataGenerator(
+        
+        #rescale=1./255,
+        #rotation_range=40,
+        #width_shift_range=0.2,
+        #height_shift_range=0.2,
+        #shear_range=0.2,
+        #zoom_range=0.2,
+        #horizontal_flip=True,
+        #fill_mode='nearest'
+        #----------------------
+        #mejor
+        #rescale=1./255,
+        #rotation_range=20,
+        #width_shift_range=0.1,
+        #height_shift_range=0.1,
+        #zoom_range=0.1,
+        #horizontal_flip=True,
+        #brightness_range=[0.8, 1.2],
+        #fill_mode='nearest'
         rescale=1./255,
-        rotation_range=40,
-        width_shift_range=0.2,
-        height_shift_range=0.2,
-        shear_range=0.2,
-        zoom_range=0.2,
+        rotation_range=50,
+        width_shift_range=0.25,
+        height_shift_range=0.25,
+        shear_range=0.3,
+        zoom_range=0.3,
         horizontal_flip=True,
+        brightness_range=[0.7, 1.3],
+        channel_shift_range=30.0,
         fill_mode='nearest'
+
     )
 
     print("🔬 Configurando generadores de validación y prueba (solo normalización)...")

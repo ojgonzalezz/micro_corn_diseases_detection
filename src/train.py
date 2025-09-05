@@ -25,9 +25,9 @@ def train():
     SPLIT_DATA_DIR = PROJECT_ROOT / 'dataset_split_balanced'
     
     IMAGE_SIZE = (224, 224)
-    BATCH_SIZE = 12 #32
+    BATCH_SIZE = 32 
     NUM_CLASSES = 4
-    EPOCHS = 5
+    EPOCHS = 30
 
     print("Iniciando el proceso de entrenamiento...")
     print(f"Dataset: {SPLIT_DATA_DIR.name}")
