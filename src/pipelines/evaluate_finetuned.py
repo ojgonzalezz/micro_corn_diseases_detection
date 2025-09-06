@@ -12,10 +12,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import classification_report, confusion_matrix
-import argparse # Biblioteca para manejar argumentos de la terminal
+import argparse 
 
-# Importar las funciones que ya creamos en los otros archivos
 from pipelines.preprocess import split_and_balance_dataset
+from utils.data_augmentator import DataAugmenter
 
 ##########################
 # ---- Evaluate model ----
@@ -30,7 +30,7 @@ def evaluate_model(model_filename: str):
         model_filename (str): Nombre del archivo del modelo a evaluar (ej. 'best_model.keras').
     """
     # --- 1. CONFIGURACIÓN ---
-    PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent
+    PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
     DATA_DIR = PROJECT_ROOT / 'data' / 'raw'
     MODEL_PATH = PROJECT_ROOT / 'models' / 'exported' / model_filename 
     IMAGE_SIZE = (224, 224)
@@ -117,3 +117,96 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     evaluate_model(model_filename=args.model)
+
+
+###############################################
+# ---- Evaluate model in augmented dataset ----
+###############################################
+
+def augmented_evaluation(model_filename: str):
+    """
+    Carga y evalúa un modelo en un conjunto de datos de prueba aumentado.
+    """
+    # --- 1. CONFIGURACIÓN ---
+    PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
+    DATA_DIR = PROJECT_ROOT / 'data' / 'raw'
+    MODEL_PATH = PROJECT_ROOT / 'models' / 'exported' / model_filename 
+    IMAGE_SIZE = (224, 224)
+    
+    if not MODEL_PATH.exists():
+        raise FileNotFoundError(f"El modelo no fue encontrado en '{MODEL_PATH}'. Verifica el nombre del archivo.")
+
+    # --- 2. CARGAR Y PREPARAR EL CONJUNTO DE PRUEBA ---
+    print("\n📦 Cargando y preparando los datos de prueba en memoria...")
+    
+    raw_dataset = split_and_balance_dataset(
+        # Solo necesitas cargar el set de prueba para la evaluacion
+        base_path=DATA_DIR,
+        split_ratios=(0.7, 0.15, 0.15),
+        balanced=True
+    )
+    
+    test_data = raw_dataset['test']
+    augmenter = DataAugmenter()
+
+    def flatten_data(data_dict, image_size=(224, 224)):
+        images = []
+        labels = []
+        class_names = []
+        for class_name, image_list in data_dict.items():
+            class_names.append(class_name)
+            for img in image_list:
+                resized_img = img.resize(image_size)
+                images.append(np.array(resized_img))
+                labels.append(class_name)
+        return np.array(images), np.array(labels), class_names
+
+    X_test_original, y_test_labels, class_names = flatten_data(raw_dataset['test'], image_size=IMAGE_SIZE)
+    
+    label_to_int = {label: i for i, label in enumerate(class_names)}
+    y_test_original = np.array([label_to_int[l] for l in y_test_labels])
+    
+    # 💥 Aplicar data augmentation al conjunto de prueba original
+    X_test_augmented, y_test_augmented = augmenter.augment_dataset(
+        images=X_test_original,
+        labels=y_test_original,
+        p=0.4
+    )
+    
+    print("✅ Datos de prueba originales y aumentados listos para la evaluación.")
+
+    # --- 3. CARGAR EL MODELO Y EVALUAR ---
+    print(f"\n🧠 Cargando el modelo desde: '{MODEL_PATH.name}'")
+    model = tf.keras.models.load_model(MODEL_PATH)
+
+    print("\n" + "="*70)
+    print("📊 Evaluando el modelo en el conjunto de prueba AUMENTADO...")
+    print("="*70)
+    
+    # ⭐ La evaluación y predicción se hacen sobre los datos aumentados ⭐
+    loss, accuracy = model.evaluate(x=X_test_augmented, y=tf.keras.utils.to_categorical(y_test_augmented))
+    print(f"\nExactitud en el conjunto de prueba AUMENTADO: {accuracy * 100:.2f}%")
+    print(f"Pérdida en el conjunto de prueba AUMENTADO: {loss:.4f}")
+
+    # --- 4. GENERAR MATRIZ DE CONFUSIÓN Y REPORTE ---
+    print("\n" + "="*70)
+    print("📈 Generando reporte de clasificación y matriz de confusión (con datos AUMENTADOS)...")
+    print("="*70)
+
+    predictions = model.predict(X_test_augmented)
+    y_pred = np.argmax(predictions, axis=1)
+    
+    y_true = y_test_augmented
+    
+    print("\nReporte de Clasificación:")
+    print(classification_report(y_true, y_pred, target_names=class_names))
+
+    cm = confusion_matrix(y_true, y_pred)
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+                xticklabels=class_names, yticklabels=class_names)
+    plt.title(f'Matriz de Confusión - {MODEL_PATH.name} (Datos AUMENTADOS)', fontsize=16)
+    plt.ylabel('Clase Verdadera')
+    plt.xlabel('Clase Predicha')
+    plt.show()
+    

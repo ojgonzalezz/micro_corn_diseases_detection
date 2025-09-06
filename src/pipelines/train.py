@@ -25,28 +25,6 @@ from builders.builders import ModelBuilder
 # ---- MLflow Callbacks ----
 ##########################
 
-#class MLflowKerasTunerCallback(Callback):
-#    """
-#    Callback personalizado para MLflow que registra cada 'trial' de Keras Tuner
-#    como un 'run' individual de MLflow.
-#    """
-#    def __init__(self, tuner, *args, **kwargs):
-#        super().__init__(*args, **kwargs)
-#        self.tuner = tuner
-#        self.mlflow_runs = {}
-#
-#    def on_trial_begin(self, trial):
-#        # Inicia un nuevo 'run' de MLflow anidado
-#        run = mlflow.start_run(nested=True, run_name=f"trial-{trial.trial_id}")
-#        self.mlflow_runs[trial.trial_id] = run
-#        # Autolog de MLflow para Keras
-#        mlflow.keras.autolog()
-#
-#    def on_trial_end(self, trial):
-#        # Finaliza el run del trial
-#        mlflow.end_run()
-
-
 class MLflowKerasTunerCallback(Callback):
     """
     Callback personalizado para MLflow que registra cada 'trial' de Keras Tuner
@@ -126,8 +104,11 @@ def train(backbone_name='VGG16', split_ratios=(0.7, 0.15, 0.15), balanced=True):
     # Parámetros para la búsqueda de Keras Tuner
     MAX_TRIALS = 10  # Número total de modelos a probar
     TUNER_EPOCHS = 10 # Número de épocas para cada modelo durante la búsqueda
-    
-    print("Iniciando el proceso de entrenamiento y búsqueda de hiperparámetros...")
+    FACTOR = 3     # Factor de reducción para el algoritmo Hyperband.
+    MAX_EPOCHS = 20 # Número máximo de épocas para cualquier modelo.
+
+
+    print("Iniciando el proceso de entrenamiento y búsqueda de hiperparámetros con Hyperband...")
     print(f"Dataset de origen: {DATA_DIR.name}")
     print(f"Número de clases: {NUM_CLASSES}")
 
@@ -178,14 +159,22 @@ def train(backbone_name='VGG16', split_ratios=(0.7, 0.15, 0.15), balanced=True):
     tuner_dir.mkdir(parents=True, exist_ok=True)
 
     print('KERAS TUNER DIR =', tuner_dir)
-    
-    tuner = kt.RandomSearch(
+    tuner = kt.Hyperband(
         hypermodel,
         objective='val_accuracy',
-        max_trials=MAX_TRIALS,
+        max_epochs=MAX_EPOCHS,
+        factor=FACTOR,
         directory=tuner_dir,
         project_name='image_classification'
     )
+    
+    #tuner = kt.RandomSearch(
+    #    hypermodel,
+    #    objective='val_accuracy',
+    #    max_trials=MAX_TRIALS,
+    #    directory=tuner_dir,
+    #    project_name='image_classification'
+    #)
 
     tuner.search_space_summary()
     
