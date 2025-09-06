@@ -67,7 +67,10 @@ Aquí podemos ver el resultado de la validación y la matriz de confusion del mo
 5.  **Optimización (Iteración 2 - Ajuste Fino):**
     * Para mejorar el rendimiento, se aplicó **Ajuste Fino (Fine-Tuning)**. Se "descongelaron" las últimas 4 capas de VGG16 y se re-entrenó el modelo con una tasa de aprendizaje muy baja (`1e-5`).
 Aquí podemos ver el resultado de la validación y la matriz de confusion de mejor modelo con fine tuning:
-<img width="787" height="467" alt="image" src="https://github.com/user-attachments/assets/0ccd1654-7836-4119-a55b-094cd52162f0" />
+
+
+<img width="762" height="453" alt="image" src="https://github.com/user-attachments/assets/22eb6992-970a-4a97-a7b2-7c2908258d2a" />
+
 <img width="789" height="703" alt="image" src="https://github.com/user-attachments/assets/a1294027-5731-44ae-ace5-761f0413ad64" />
 
 
