@@ -12,10 +12,11 @@ from datetime import datetime
 import keras_tuner as kt
 import numpy as np
 
-# Importar las funciones que ya creamos en los otros archivos
-#from data_pipeline import create_data_generators
+import mlflow
+import mlflow.tensorflow
+from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from pipelines.preprocess import split_and_balance_dataset
-from builders.base_models import *
+from builders.builders import ModelBuilder
 
 #######################
 # ---- Fine Tunner ----

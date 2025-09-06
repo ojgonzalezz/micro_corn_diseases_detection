@@ -24,19 +24,33 @@ import tensorflow as tf
 
 def check_cuda_availability():
     """
-    Verifica si PyTorch puede usar una GPU con soporte CUDA.
+    Verifica si PyTorch y TensorFlow pueden usar una GPU con soporte CUDA.
     """
-    print("Verificando si la GPU está disponible...")
+    print("⚡⚡ Verificando si la GPU está disponible... ⚡⚡\n")
+
+    print("🔹 Verificando GPU en PyTorch 🔹")
     
     is_available = torch.cuda.is_available()
     
     if is_available:
-        print("✅ ¡La GPU está disponible! PyTorch puede usar CUDA.")
+        print("✅ ¡La GPU está disponible! PyTorch puede usar CUDA 🎉🚀")
         # Opcional: muestra el nombre de la GPU que se está utilizando
-        print(f"   Nombre de la GPU: {torch.cuda.get_device_name(0)}")
+        print(f"   💻 Nombre de la GPU: {torch.cuda.get_device_name(0)}\n")
     else:
-        print("❌ La GPU no está disponible. PyTorch se ejecutará en CPU.")
-        print("   Asegúrate de haber instalado la versión correcta de PyTorch con soporte CUDA.")
+        print("❌ La GPU no está disponible ❌. PyTorch se ejecutará en CPU 🖥️")
+        print("   ⚠️ Asegúrate de haber instalado la versión correcta de PyTorch con soporte CUDA.\n")
+
+    print("🔹 Verificando GPU en TensorFlow 🔹")
+     
+    print(f"📌 TensorFlow version: {tf.__version__}")
+    print(f"⚙️ Built with CUDA: {tf.test.is_built_with_cuda()} 🌟")
+    print(f"⚙️ Built with cuDNN: {tf.test.is_built_with_gpu_support()} 🌟\n")
+
+    if tf.test.is_built_with_cuda() and tf.test.is_built_with_gpu_support():
+        print("🎯 ¡TensorFlow puede usar la GPU con CUDA y cuDNN! 🚀🔥")
+    else:
+        print("⚠️ TensorFlow no puede usar la GPU. Se ejecutará en CPU 🖥️")
+
         
 
 ##################################
