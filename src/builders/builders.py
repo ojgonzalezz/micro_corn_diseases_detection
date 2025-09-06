@@ -98,3 +98,4 @@ class ModelBuilder(kt.HyperModel):
         
         print("✅ Modelo final construido y compilado.")
         return model
+    

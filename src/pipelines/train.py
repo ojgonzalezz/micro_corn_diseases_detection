@@ -8,15 +8,81 @@
 
 import tensorflow as tf
 import pathlib
-from datetime import datetime
-import keras_tuner as kt
 import numpy as np
-
 import mlflow
-import mlflow.tensorflow
+import mlflow.keras as mlflow_keras
+import keras_tuner as kt
+from tensorflow.keras.callbacks import Callback
+import os
+
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
+
+# Asegúrate de que las rutas de importación sean correctas para tu proyecto
 from pipelines.preprocess import split_and_balance_dataset
 from builders.builders import ModelBuilder
+
+##########################
+# ---- MLflow Callbacks ----
+##########################
+
+#class MLflowKerasTunerCallback(Callback):
+#    """
+#    Callback personalizado para MLflow que registra cada 'trial' de Keras Tuner
+#    como un 'run' individual de MLflow.
+#    """
+#    def __init__(self, tuner, *args, **kwargs):
+#        super().__init__(*args, **kwargs)
+#        self.tuner = tuner
+#        self.mlflow_runs = {}
+#
+#    def on_trial_begin(self, trial):
+#        # Inicia un nuevo 'run' de MLflow anidado
+#        run = mlflow.start_run(nested=True, run_name=f"trial-{trial.trial_id}")
+#        self.mlflow_runs[trial.trial_id] = run
+#        # Autolog de MLflow para Keras
+#        mlflow.keras.autolog()
+#
+#    def on_trial_end(self, trial):
+#        # Finaliza el run del trial
+#        mlflow.end_run()
+
+
+class MLflowKerasTunerCallback(Callback):
+    """
+    Callback personalizado para MLflow que registra cada 'trial' de Keras Tuner
+    como un 'run' individual de MLflow, incluyendo parámetros y métricas por epoch.
+    """
+    def __init__(self, tuner, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.tuner = tuner
+        self.mlflow_runs = {}
+        self.current_trial_id = None
+
+    def on_trial_begin(self, trial):
+        # Inicia un nuevo run en MLflow (anidado dentro del experimento)
+        run = mlflow.start_run(nested=True, run_name=f"trial-{trial.trial_id}")
+        self.mlflow_runs[trial.trial_id] = run
+        self.current_trial_id = trial.trial_id
+
+        # Loggea los hiperparámetros del trial en MLflow
+        for hp_name, hp_value in trial.hyperparameters.values.items():
+            mlflow.log_param(hp_name, hp_value)
+
+    def on_epoch_end(self, epoch, logs=None):
+        """
+        Registra métricas por epoch (accuracy, loss, val_accuracy, val_loss, etc.)
+        """
+        if logs:
+            for metric_name, metric_value in logs.items():
+                mlflow.log_metric(metric_name, metric_value, step=epoch)
+
+    def on_trial_end(self, trial):
+        """
+        Cierra el run de MLflow al finalizar el trial
+        """
+        mlflow.end_run()
+        self.current_trial_id = None
+
 
 #######################
 # ---- Fine Tunner ----
@@ -25,14 +91,33 @@ from builders.builders import ModelBuilder
 def train(backbone_name='VGG16', split_ratios=(0.7, 0.15, 0.15), balanced=True):
     """
     Función principal para orquestar el proceso de entrenamiento y la búsqueda
-    de hiperparámetros con Keras Tuner.
+    de hiperparámetros con Keras Tuner, rastreando los experimentos con MLflow.
     
     Args:
+        backbone_name (str): Nombre del modelo base a usar (ej. 'VGG16', 'ResNet50').
         split_ratios (tuple): Ratios de división para train, val y test.
         balanced (bool): Si es True, balancea el dataset. Si es False, usa el dataset original.
+    
+    Returns:
+        kt.Tuner: El objeto tuner con los resultados de la búsqueda.
+        tuple: Una tupla con los datos de prueba (X_test, y_test).
     """
-    # --- 1. CONFIGURACIÓN ---
-    PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent
+    # --- 1. CONFIGURACIÓN DE RUTAS Y PARÁMETROS ---
+    MLRUNS_PATH = os.path.join(os.path.dirname(os.getcwd()), 'models', 'mlruns')
+    print('mlruns directory =', MLRUNS_PATH)
+    os.makedirs(MLRUNS_PATH, exist_ok=True)
+
+    # Tracking URI (usar formato file:/// con / en lugar de \)
+    mlruns_uri = f"file:///{os.path.abspath(MLRUNS_PATH).replace(os.sep, '/')}"
+    mlflow.set_tracking_uri(mlruns_uri)
+
+    print("📂 Tracking URI actual:", mlflow.get_tracking_uri())
+
+    # 🔹 Asegurar que el experimento existe
+    experiment_name = "image_classification_experiment"
+    mlflow.set_experiment(experiment_name)
+
+    PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
     DATA_DIR = PROJECT_ROOT / 'data' / 'raw'
     
     IMAGE_SIZE = (224, 224)
@@ -45,36 +130,30 @@ def train(backbone_name='VGG16', split_ratios=(0.7, 0.15, 0.15), balanced=True):
     print("Iniciando el proceso de entrenamiento y búsqueda de hiperparámetros...")
     print(f"Dataset de origen: {DATA_DIR.name}")
     print(f"Número de clases: {NUM_CLASSES}")
-    
+
     # --- 2. CARGAR Y PREPARAR LOS DATOS ---
-    print("\nCargando y preparando los datos en memoria...")
+    print("\n📦 Cargando y preparando los datos en memoria...")
     
-    # Usar la función modificada para cargar y dividir los datos en un diccionario
     raw_dataset = split_and_balance_dataset(
         split_ratios=split_ratios,
         balanced=balanced
     )
 
-    # Convertir el diccionario de datos en listas planas para Keras Tuner
     def flatten_data(data_dict, image_size=(224, 224)):
         images = []
         labels = []
         for class_name, image_list in data_dict.items():
             for img in image_list:
-                # Redimensionar la imagen a un tamaño uniforme antes de convertirla
                 resized_img = img.resize(image_size)
                 images.append(np.array(resized_img))
                 labels.append(class_name)
-    
+        
         return np.array(images), np.array(labels)
 
-    # Y luego, llama a la función en tu script 'train.py'
-    # con el tamaño de imagen correcto.
     X_train, y_train = flatten_data(raw_dataset['train'], image_size=IMAGE_SIZE)
     X_val, y_val = flatten_data(raw_dataset['val'], image_size=IMAGE_SIZE)
     X_test, y_test = flatten_data(raw_dataset['test'], image_size=IMAGE_SIZE)
 
-    # Codificar las etiquetas
     label_to_int = {label: i for i, label in enumerate(np.unique(y_train))}
     y_train = np.array([label_to_int[l] for l in y_train])
     y_val = np.array([label_to_int[l] for l in y_val])
@@ -87,7 +166,7 @@ def train(backbone_name='VGG16', split_ratios=(0.7, 0.15, 0.15), balanced=True):
     print("✅ Datos convertidos a tensores de NumPy.")
     
     # --- 3. INICIALIZAR EL MODEL BUILDER E INSTANCIAR EL TUNER ---
-    print("\nInicializando el constructor de modelos para el Tuner...")
+    print("\n🛠️  Inicializando el constructor de modelos para el Tuner...")
     
     hypermodel = ModelBuilder(
         backbone_name=backbone_name,
@@ -95,9 +174,10 @@ def train(backbone_name='VGG16', split_ratios=(0.7, 0.15, 0.15), balanced=True):
         num_classes=NUM_CLASSES
     )
 
-    # Configurar el directorio para guardar los checkpoints del tuner
     tuner_dir = PROJECT_ROOT / 'models' / 'tuner_checkpoints'
     tuner_dir.mkdir(parents=True, exist_ok=True)
+
+    print('KERAS TUNER DIR =', tuner_dir)
     
     tuner = kt.RandomSearch(
         hypermodel,
@@ -109,55 +189,69 @@ def train(backbone_name='VGG16', split_ratios=(0.7, 0.15, 0.15), balanced=True):
 
     tuner.search_space_summary()
     
-    # --- 4. EJECUTAR LA BÚSQUEDA DE HIPERPARÁMETROS ---
+    # --- 4. CONFIGURAR CALLBACKS ---
+    print("\n⚙️  Configurando Callbacks para la búsqueda...")
+    
+    checkpoint_cb = ModelCheckpoint(
+        filepath=tuner_dir / 'best_trial_model.keras',
+        save_best_only=True,
+        monitor='val_accuracy',
+        mode='max',
+        verbose=1
+    )
+
+    early_stopping_cb = EarlyStopping(
+        monitor='val_accuracy',
+        patience=3,
+        restore_best_weights=True
+    )
+    
+    callbacks = [
+        checkpoint_cb, 
+        early_stopping_cb,
+        MLflowKerasTunerCallback(tuner) # <-- El nuevo callback personalizado
+    ]
+
+    # --- 5. EJECUTAR LA BÚSQUEDA DE HIPERPARÁMETROS CON MLflow ---
     print("\n" + "="*70)
-    print("🚀 ¡Comenzando la búsqueda de hiperparámetros!")
+    print("🚀 ¡Comenzando la búsqueda de hiperparámetros con MLflow!")
     print("="*70)
 
-    # La búsqueda se realiza directamente con los tensores
-    tuner.search(
-        x=X_train,
-        y=y_train,
-        epochs=TUNER_EPOCHS,
-        validation_data=(X_val, y_val)
-    )
+    # Iniciar un run de MLflow que encapsula toda la búsqueda
+    with mlflow.start_run(run_name=f"{backbone_name}_tuner_search"):
+        tuner.search(
+            x=X_train,
+            y=y_train,
+            epochs=TUNER_EPOCHS,
+            validation_data=(X_val, y_val),
+            callbacks=callbacks
+        )
 
     print("\n" + "="*70)
     print("✅ ¡Búsqueda de hiperparámetros completada exitosamente!")
     print("="*70)
     
-    # --- 5. OBTENER EL MEJOR MODELO ---
+    # --- 6. OBTENER Y GUARDAR EL MEJOR MODELO ---
     best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
     best_model = tuner.get_best_models(num_models=1)[0]
     
     print(f"\n🏆 El mejor modelo se encontró con los siguientes hiperparámetros:")
     for hp_name, value in best_hps.values.items():
         print(f"  - {hp_name}: {value}")
-        
-    # --- 6. EVALUAR Y GUARDAR EL MEJOR MODELO ---
+
+    exported_model_dir = PROJECT_ROOT / 'models' / 'exported'
+    exported_model_dir.mkdir(parents=True, exist_ok=True)
+    
+    best_model_path = exported_model_dir / f'best_{backbone_name}.keras'
+    best_model.save(best_model_path)
+    print(f"\n💾 El mejor modelo final se ha guardado en: {best_model_path}")
+
+    # --- 7. EVALUAR EL MEJOR MODELO EN EL CONJUNTO DE PRUEBA ---
     print("\n" + "="*70)
-    print("📊 Evaluando el mejor modelo...")
+    print("📊 Evaluando el mejor modelo en el conjunto de prueba...")
     print("="*70)
     
     test_loss, test_acc = best_model.evaluate(x=X_test, y=y_test)
     print(f"\n✅ Precisión en el conjunto de prueba: {test_acc:.4f}")
     
-    best_model_path = tuner_dir / 'best_model.keras'
-    best_model.save(best_model_path)
-    print(f"💾 El mejor modelo final se ha guardado en: {best_model_path}")
-    
-    # Devolver el tuner y los datos para análisis posterior
     return tuner, (X_test, y_test)
-
-#if __name__ == '__main__':
-#    # Llamar a la función de entrenamiento con los parámetros deseados
-#    tuner_instance, test_data_sets = train(
-#        split_ratios=(0.7, 0.15, 0.15),
-#        balanced=True
-#    )
-    
-    # Ahora puedes usar tuner_instance para acceder a la historia
-    # Por ejemplo:
-    # results = tuner_instance.get_best_trials(num_trials=1)
-    # history = results[0].metrics.get_history()
-    # print(history)
