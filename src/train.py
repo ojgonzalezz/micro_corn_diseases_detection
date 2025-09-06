@@ -9,6 +9,8 @@ from data_pipeline import create_data_generators
 from model import build_model
 # Importar los Callbacks necesarios
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
+import mlflow
+import mlflow.tensorflow
 
 def train():
     """
@@ -23,6 +25,15 @@ def train():
     BATCH_SIZE = 32
     NUM_CLASSES = 4
     EPOCHS = 20
+
+   # ---------- MLflow: tracking + experiment ----------
+    # Usa una carpeta persistente en tu Drive
+    MLFLOW_DIR = PROJECT_ROOT / "mlruns"
+    MLFLOW_DIR.mkdir(parents=True, exist_ok=True)
+    mlflow.set_tracking_uri(f"file:{MLFLOW_DIR}")            
+    mlflow.set_experiment("vgg16_baseline")                  
+    mlflow.tensorflow.autolog()                              
+    # ----------------------------------------------------
 
     print("Iniciando el proceso de entrenamiento...")
     print(f"Dataset: {SPLIT_DATA_DIR.name}")
@@ -74,14 +85,23 @@ def train():
     print("🚀 ¡Comenzando el entrenamiento!")
     print("="*70)
     
-    history = model.fit(
-        train_generator,
-        steps_per_epoch=train_generator.samples // BATCH_SIZE,
-        epochs=EPOCHS,
-        validation_data=validation_generator,
-        validation_steps=validation_generator.samples // BATCH_SIZE,
-        callbacks=[checkpoint_cb, early_stopping_cb] # <-- AQUÍ SE AÑADEN LOS CALLBACKS
-    )
+    with mlflow.start_run(run_name="vgg16_baseline_run"):
+        history = model.fit(
+            train_generator,
+            steps_per_epoch=max(1, train_generator.samples // BATCH_SIZE),
+            epochs=EPOCHS,
+            validation_data=validation_generator,
+            validation_steps=max(1, validation_generator.samples // BATCH_SIZE),
+            callbacks=[checkpoint_cb, early_stopping_cb]
+        )
+
+        # Log extra params (autolog ya registra bastante)
+        mlflow.log_param("batch_size", BATCH_SIZE)
+        mlflow.log_param("epochs", EPOCHS)
+        mlflow.log_param("image_size", IMAGE_SIZE)
+
+        # (Opcional) Loguear el modelo final manualmente
+        mlflow.keras.log_model(model, "final_model")
 
     print("\n" + "="*70)
     print("✅ ¡Entrenamiento completado exitosamente!")
