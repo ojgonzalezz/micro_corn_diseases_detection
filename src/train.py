@@ -3,6 +3,8 @@
 import tensorflow as tf
 import pathlib
 from datetime import datetime
+import mlflow
+import mlflow.tensorflow
 
 # Importar las funciones que ya creamos en los otros archivos
 from data_pipeline import create_data_generators
@@ -11,6 +13,9 @@ from model import build_model
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 
 def train():
+    
+    mlflow.tensorflow.autolog()
+
     """
     Función principal para orquestar el proceso de entrenamiento del modelo,
     incluyendo callbacks para un entrenamiento robusto.
@@ -20,9 +25,9 @@ def train():
     SPLIT_DATA_DIR = PROJECT_ROOT / 'dataset_split_balanced'
     
     IMAGE_SIZE = (224, 224)
-    BATCH_SIZE = 32
+    BATCH_SIZE = 32 
     NUM_CLASSES = 4
-    EPOCHS = 20
+    EPOCHS = 30
 
     print("Iniciando el proceso de entrenamiento...")
     print(f"Dataset: {SPLIT_DATA_DIR.name}")
@@ -73,15 +78,24 @@ def train():
     print("\n" + "="*70)
     print("🚀 ¡Comenzando el entrenamiento!")
     print("="*70)
-    
-    history = model.fit(
-        train_generator,
-        steps_per_epoch=train_generator.samples // BATCH_SIZE,
-        epochs=EPOCHS,
-        validation_data=validation_generator,
-        validation_steps=validation_generator.samples // BATCH_SIZE,
-        callbacks=[checkpoint_cb, early_stopping_cb] # <-- AQUÍ SE AÑADEN LOS CALLBACKS
-    )
+
+    with mlflow.start_run(run_name="vgg16_baseline"):
+        history = model.fit(
+            train_generator,
+            steps_per_epoch=train_generator.samples // BATCH_SIZE,
+            epochs=EPOCHS,
+            validation_data=validation_generator,
+            validation_steps=validation_generator.samples // BATCH_SIZE,
+            callbacks=[checkpoint_cb, early_stopping_cb] # <-- AQUÍ SE AÑADEN LOS CALLBACKS
+        )
+
+        # Guardar el modelo final como artefacto de MLflow
+        mlflow.keras.log_model(model, "final_model")
+
+        # También puedes registrar hiperparámetros o métricas manualmente si quieres
+        mlflow.log_param("batch_size", BATCH_SIZE)
+        mlflow.log_param("epochs", EPOCHS)
+        mlflow.log_param("image_size", IMAGE_SIZE)
 
     print("\n" + "="*70)
     print("✅ ¡Entrenamiento completado exitosamente!")
