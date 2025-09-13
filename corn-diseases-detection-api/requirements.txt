@@ -1,0 +1,19 @@
+# FastAPI en la línea Pydantic v1 (compatible con typing-extensions <4.6)
+fastapi==0.99.1
+starlette==0.27.0
+pydantic==1.10.13
+
+# Server
+uvicorn[standard]==0.22.0
+
+# ML stack alineada con TF 2.12
+tensorflow-cpu==2.12.1
+keras<3               # 🔒 evita que se instale Keras 3.x
+numpy==1.24.3
+h5py==3.11.0
+pillow==10.4.0
+
+# clave para que TF 2.12 no choque
+typing-extensions==4.5.0
+python-multipart==0.0.6
+
