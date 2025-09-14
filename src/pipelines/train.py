@@ -25,7 +25,6 @@ from builders.builders import ModelBuilder
 # ---- MLflow Callbacks ----
 ##########################
 
-
 class MLflowKerasTunerCallback(Callback):
     """
     Callback personalizado para MLflow que registra cada 'trial' de Keras Tuner
@@ -93,7 +92,7 @@ def train(backbone_name='VGG16', split_ratios=(0.7, 0.15, 0.15), balanced=True):
 
     print("📂 Tracking URI actual:", mlflow.get_tracking_uri())
 
-    # 🔹 Asegurar que el experimento existe
+    # Asegurar que el experimento existe
     experiment_name = "image_classification_experiment"
     mlflow.set_experiment(experiment_name)
 
@@ -137,6 +136,17 @@ def train(backbone_name='VGG16', split_ratios=(0.7, 0.15, 0.15), balanced=True):
     X_train, y_train = flatten_data(raw_dataset['train'], image_size=IMAGE_SIZE)
     X_val, y_val = flatten_data(raw_dataset['val'], image_size=IMAGE_SIZE)
     X_test, y_test = flatten_data(raw_dataset['test'], image_size=IMAGE_SIZE)
+
+    # Después de la función flatten_data()
+    if np.isnan(X_train).any() or np.isinf(X_train).any():
+        print("Error: Los datos de entrenamiento contienen valores no válidos.")
+        exit()
+    if np.isnan(X_val).any() or np.isinf(X_val).any():
+        print("Error: Los datos de entrenamiento contienen valores no válidos.")
+        exit()
+    if np.isnan(X_test).any() or np.isinf(X_test).any():
+        print("Error: Los datos de entrenamiento contienen valores no válidos.")
+        exit()
 
     label_to_int = {label: i for i, label in enumerate(np.unique(y_train))}
     y_train = np.array([label_to_int[l] for l in y_train])
@@ -193,8 +203,7 @@ def train(backbone_name='VGG16', split_ratios=(0.7, 0.15, 0.15), balanced=True):
     
     callbacks = [
         checkpoint_cb, 
-        early_stopping_cb#,
-        #MLflowKerasTunerCallback(tuner) # <-- El nuevo callback personalizado
+        early_stopping_cb
     ]
 
     # --- 5. EJECUTAR LA BÚSQUEDA DE HIPERPARÁMETROS CON MLflow ---
@@ -225,9 +234,6 @@ def train(backbone_name='VGG16', split_ratios=(0.7, 0.15, 0.15), balanced=True):
                         history = metric_obj.get_history() if hasattr(metric_obj, "get_history") else metric_obj.history
                         if history:
                         # loggea todos los valores por epoch
-                            #for step, value in enumerate(history):
-                            #    mlflow.log_metric(metric_name, value, step=step)
-
                             for obs in history:
                                 # obs puede ser un MetricObservation o un número
                                 if hasattr(obs, "value"):
@@ -249,41 +255,28 @@ def train(backbone_name='VGG16', split_ratios=(0.7, 0.15, 0.15), balanced=True):
     # --- 6. OBTENER Y GUARDAR EL MEJOR MODELO ---
     best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
     best_model = tuner.get_best_models(num_models=1)[0]
-    # Obtener mejores hiperparámetros
-    #best_hps = tuner.get_best_hyperparameters(num_trials=1)
 
-    if best_hps:
-        best_hps = best_hps[0]
-    else:
-        print("⚠️ No se encontraron hiperparámetros óptimos, usando los iniciales por defecto")
-        best_hps = tuner.oracle.get_space().get_hyperparameters()  # fallback
+    #if best_hps:
+    #    best_hps = best_hps[0]
+    #else:
+    #    print("⚠️ No se encontraron hiperparámetros óptimos, usando los iniciales por defecto")
+    #    best_hps = tuner.oracle.get_space().get_hyperparameters()  # fallback
 
     with mlflow.start_run(run_name=f"{backbone_name}_best_model", nested=True):
-        if hasattr(best_hps, "values"):
-            mlflow.log_params(best_hps.values)
-        else:
-            print("⚠️ best_hps no tiene .values, loggeando como dict plano")
-            mlflow.log_params(dict(best_hps))
-
+        print("\n📊 Evaluando el mejor modelo en el conjunto de prueba...")
+        test_loss, test_acc = best_model.evaluate(x=X_test, y=y_test)
+        print(f"\n✅ Precisión en el conjunto de prueba: {test_acc:.4f}")
+        mlflow.log_params(best_hps.values)
         mlflow.keras.log_model(best_model, "model")
         mlflow.log_metric("test_accuracy", test_acc)
 
-
-    
-    #with mlflow.start_run(run_name=f"{backbone_name}_best_model", nested=True):
-    #    mlflow.log_params(best_hps.values)
-    #    mlflow.keras.log_model(best_model, "model")
-    #    mlflow.log_metric("test_accuracy", test_acc)
+    print(f"\n🏆 El mejor modelo se encontró con los siguientes hiperparámetros:")
+    for hp_name, value in best_hps.values.items():
+        print(f"   - {hp_name}: {value}")
 
     print("\n" + "="*70)
     print("✅ ¡Búsqueda de hiperparámetros completada exitosamente!")
     print("="*70)
-    
-    
-    
-    print(f"\n🏆 El mejor modelo se encontró con los siguientes hiperparámetros:")
-    for hp_name, value in best_hps.values.items():
-        print(f"  - {hp_name}: {value}")
 
     exported_model_dir = PROJECT_ROOT / 'models' / 'exported'
     exported_model_dir.mkdir(parents=True, exist_ok=True)
