@@ -16,6 +16,7 @@ import argparse
 
 from pipelines.preprocess import split_and_balance_dataset
 from utils.data_augmentator import DataAugmenter
+from utils.image_modifier import ImageAugmentor
 
 ##########################
 # ---- Evaluate model ----
@@ -123,7 +124,7 @@ if __name__ == '__main__':
 # ---- Evaluate model in augmented dataset ----
 ###############################################
 
-def augmented_evaluation(model_filename: str):
+def augmented_evaluation(model_filename: str, aug_type="spacial"):
     """
     Carga y evalúa un modelo en un conjunto de datos de prueba aumentado.
     """
@@ -147,6 +148,11 @@ def augmented_evaluation(model_filename: str):
     )
     
     test_data = raw_dataset['test']
+
+    augmenter = {
+        "spacial":DataAugmenter(),
+        "quality": ImageAugmentor()
+    }
     augmenter = DataAugmenter()
 
     def flatten_data(data_dict, image_size=(224, 224)):

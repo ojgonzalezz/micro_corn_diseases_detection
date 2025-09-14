@@ -6,18 +6,16 @@
 # ---- Depdendencies ----
 #########################
 
-import tensorflow as tf
+import os
 import pathlib
+from core.load_env import EnvLoader
 import numpy as np
 import mlflow
 import mlflow.keras as mlflow_keras
+import tensorflow as tf
 import keras_tuner as kt
 from tensorflow.keras.callbacks import Callback
-import os
-
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
-
-# Asegúrate de que las rutas de importación sean correctas para tu proyecto
 from pipelines.preprocess import split_and_balance_dataset
 from builders.builders import ModelBuilder
 
@@ -81,6 +79,9 @@ def train(backbone_name='VGG16', split_ratios=(0.7, 0.15, 0.15), balanced=True):
         kt.Tuner: El objeto tuner con los resultados de la búsqueda.
         tuple: Una tupla con los datos de prueba (X_test, y_test).
     """
+    # --- 0. INICIALIZACION DE VARIABLES ---
+    env_vars = EnvLoader().get_all()
+
     # --- 1. CONFIGURACIÓN DE RUTAS Y PARÁMETROS ---
     MLRUNS_PATH = os.path.join(os.path.dirname(os.getcwd()), 'models', 'mlruns')
     print('mlruns directory =', MLRUNS_PATH)
@@ -99,16 +100,15 @@ def train(backbone_name='VGG16', split_ratios=(0.7, 0.15, 0.15), balanced=True):
     PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
     DATA_DIR = PROJECT_ROOT / 'data' / 'raw'
     
-    IMAGE_SIZE = (224, 224)
-    NUM_CLASSES = 4
-    BATCH_SIZE = 32
+    IMAGE_SIZE = tuple(env_vars['IMAGE_SIZE']) #(224, 224)
+    NUM_CLASSES = int(env_vars['NUM_CLASSES']) #4
+    BATCH_SIZE = int(env_vars['BATCH_SIZE']) #32
     
     # Parámetros para la búsqueda de Keras Tuner
-    MAX_TRIALS = 10  # Número total de modelos a probar
-    TUNER_EPOCHS = 10 # Número de épocas para cada modelo durante la búsqueda
-    FACTOR = 3     # Factor de reducción para el algoritmo Hyperband.
-    MAX_EPOCHS = 20 # Número máximo de épocas para cualquier modelo.
-
+    MAX_TRIALS = int(env_vars['MAX_TRIALS']) #10  # Número total de modelos a probar
+    TUNER_EPOCHS = int(env_vars['TUNER_EPOCHS']) #10 # Número de épocas para cada modelo durante la búsqueda
+    FACTOR = int(env_vars['FACTOR'])  #3     # Factor de reducción para el algoritmo Hyperband.
+    MAX_EPOCHS = int(env_vars['MAX_EPOCHS']) #20 # Número máximo de épocas para cualquier modelo.
 
     print("Iniciando el proceso de entrenamiento y búsqueda de hiperparámetros con Hyperband...")
     print(f"Dataset de origen: {DATA_DIR.name}")
@@ -181,7 +181,6 @@ def train(backbone_name='VGG16', split_ratios=(0.7, 0.15, 0.15), balanced=True):
         project_name='image_classification'
     )
     
-
     tuner.search_space_summary()
     
     # --- 4. CONFIGURAR CALLBACKS ---
@@ -223,12 +222,15 @@ def train(backbone_name='VGG16', split_ratios=(0.7, 0.15, 0.15), balanced=True):
         )
 
         # Al terminar, log de cada trial manualmente
+        print("\n" + "="*70)
+        print("📊 Registrando métricas con MLflow:")
         for trial in tuner.oracle.trials.values():
             with mlflow.start_run(nested=True, run_name=f"trial-{trial.trial_id}"):
                 for hp_name, hp_value in trial.hyperparameters.values.items():
                     mlflow.log_param(hp_name, str(hp_value))
 
                 if trial.metrics.metrics:
+                    
                     for metric_name, metric_obj in trial.metrics.metrics.items():
                     # metric_obj.history es una lista de floats (uno por epoch)
                         history = metric_obj.get_history() if hasattr(metric_obj, "get_history") else metric_obj.history
@@ -251,23 +253,23 @@ def train(backbone_name='VGG16', split_ratios=(0.7, 0.15, 0.15), balanced=True):
                                 else:
                                     # obs es ya un float o int
                                     mlflow.log_metric(metric_name, float(obs), step=history.index(obs))
-    
+        print("="*70)
     # --- 6. OBTENER Y GUARDAR EL MEJOR MODELO ---
     best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
     best_model = tuner.get_best_models(num_models=1)[0]
 
-    #if best_hps:
-    #    best_hps = best_hps[0]
-    #else:
-    #    print("⚠️ No se encontraron hiperparámetros óptimos, usando los iniciales por defecto")
-    #    best_hps = tuner.oracle.get_space().get_hyperparameters()  # fallback
+    if best_hps:
+        print("\n✅ Best Hyperparameters found. Report in progress.")
+    else:
+        print("⚠️ No se encontraron hiperparámetros óptimos, usando los iniciales por defecto")
+        best_hps = tuner.oracle.get_space().get_hyperparameters()  
 
     with mlflow.start_run(run_name=f"{backbone_name}_best_model", nested=True):
         print("\n📊 Evaluando el mejor modelo en el conjunto de prueba...")
         test_loss, test_acc = best_model.evaluate(x=X_test, y=y_test)
         print(f"\n✅ Precisión en el conjunto de prueba: {test_acc:.4f}")
         mlflow.log_params(best_hps.values)
-        mlflow.keras.log_model(best_model, "model")
+        mlflow.keras.log_model(best_model, "final_corn_model")
         mlflow.log_metric("test_accuracy", test_acc)
 
     print(f"\n🏆 El mejor modelo se encontró con los siguientes hiperparámetros:")
