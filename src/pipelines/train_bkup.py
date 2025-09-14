@@ -25,7 +25,6 @@ from builders.builders import ModelBuilder
 # ---- MLflow Callbacks ----
 ##########################
 
-
 class MLflowKerasTunerCallback(Callback):
     """
     Callback personalizado para MLflow que registra cada 'trial' de Keras Tuner
@@ -102,7 +101,6 @@ def train(backbone_name='VGG16', split_ratios=(0.7, 0.15, 0.15), balanced=True):
     
     IMAGE_SIZE = (224, 224)
     NUM_CLASSES = 4
-    BATCH_SIZE = 32
     
     # Parámetros para la búsqueda de Keras Tuner
     MAX_TRIALS = 10  # Número total de modelos a probar
@@ -171,6 +169,13 @@ def train(backbone_name='VGG16', split_ratios=(0.7, 0.15, 0.15), balanced=True):
         project_name='image_classification'
     )
     
+    #tuner = kt.RandomSearch(
+    #    hypermodel,
+    #    objective='val_accuracy',
+    #    max_trials=MAX_TRIALS,
+    #    directory=tuner_dir,
+    #    project_name='image_classification'
+    #)
 
     tuner.search_space_summary()
     
@@ -193,8 +198,8 @@ def train(backbone_name='VGG16', split_ratios=(0.7, 0.15, 0.15), balanced=True):
     
     callbacks = [
         checkpoint_cb, 
-        early_stopping_cb#,
-        #MLflowKerasTunerCallback(tuner) # <-- El nuevo callback personalizado
+        early_stopping_cb,
+        MLflowKerasTunerCallback(tuner) # <-- El nuevo callback personalizado
     ]
 
     # --- 5. EJECUTAR LA BÚSQUEDA DE HIPERPARÁMETROS CON MLflow ---
@@ -209,77 +214,16 @@ def train(backbone_name='VGG16', split_ratios=(0.7, 0.15, 0.15), balanced=True):
             y=y_train,
             epochs=TUNER_EPOCHS,
             validation_data=(X_val, y_val),
-            callbacks=callbacks,
-            batch_size=BATCH_SIZE
+            callbacks=callbacks
         )
-
-        # Al terminar, log de cada trial manualmente
-        for trial in tuner.oracle.trials.values():
-            with mlflow.start_run(nested=True, run_name=f"trial-{trial.trial_id}"):
-                for hp_name, hp_value in trial.hyperparameters.values.items():
-                    mlflow.log_param(hp_name, str(hp_value))
-
-                if trial.metrics.metrics:
-                    for metric_name, metric_obj in trial.metrics.metrics.items():
-                    # metric_obj.history es una lista de floats (uno por epoch)
-                        history = metric_obj.get_history() if hasattr(metric_obj, "get_history") else metric_obj.history
-                        if history:
-                        # loggea todos los valores por epoch
-                            #for step, value in enumerate(history):
-                            #    mlflow.log_metric(metric_name, value, step=step)
-
-                            for obs in history:
-                                # obs puede ser un MetricObservation o un número
-                                if hasattr(obs, "value"):
-                                    val = obs.value
-                                    if isinstance(val, (list, tuple)):
-                                        # recorrer cada valor dentro de la lista
-                                        for i, v in enumerate(val):
-                                            mlflow.log_metric(metric_name, float(v), step=(getattr(obs, "step", 0) or 0) + i)
-                                    else:
-                                        mlflow.log_metric(
-                                            metric_name,
-                                            float(val),
-                                            step=getattr(obs, "step", None) or 0
-                                        )
-                                else:
-                                    # obs es ya un float o int
-                                    mlflow.log_metric(metric_name, float(obs), step=history.index(obs))
-    
-    # --- 6. OBTENER Y GUARDAR EL MEJOR MODELO ---
-    best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
-    best_model = tuner.get_best_models(num_models=1)[0]
-    # Obtener mejores hiperparámetros
-    #best_hps = tuner.get_best_hyperparameters(num_trials=1)
-
-    if best_hps:
-        best_hps = best_hps[0]
-    else:
-        print("⚠️ No se encontraron hiperparámetros óptimos, usando los iniciales por defecto")
-        best_hps = tuner.oracle.get_space().get_hyperparameters()  # fallback
-
-    with mlflow.start_run(run_name=f"{backbone_name}_best_model", nested=True):
-        if hasattr(best_hps, "values"):
-            mlflow.log_params(best_hps.values)
-        else:
-            print("⚠️ best_hps no tiene .values, loggeando como dict plano")
-            mlflow.log_params(dict(best_hps))
-
-        mlflow.keras.log_model(best_model, "model")
-        mlflow.log_metric("test_accuracy", test_acc)
-
-
-    
-    #with mlflow.start_run(run_name=f"{backbone_name}_best_model", nested=True):
-    #    mlflow.log_params(best_hps.values)
-    #    mlflow.keras.log_model(best_model, "model")
-    #    mlflow.log_metric("test_accuracy", test_acc)
 
     print("\n" + "="*70)
     print("✅ ¡Búsqueda de hiperparámetros completada exitosamente!")
     print("="*70)
     
-    
+    # --- 6. OBTENER Y GUARDAR EL MEJOR MODELO ---
+    best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
+    best_model = tuner.get_best_models(num_models=1)[0]
     
     print(f"\n🏆 El mejor modelo se encontró con los siguientes hiperparámetros:")
     for hp_name, value in best_hps.values.items():
