@@ -153,7 +153,6 @@ def augmented_evaluation(model_filename: str, aug_type="spacial"):
         "spacial":DataAugmenter(),
         "quality": ImageAugmentor()
     }
-    augmenter = DataAugmenter()
 
     def flatten_data(data_dict, image_size=(224, 224)):
         images = []

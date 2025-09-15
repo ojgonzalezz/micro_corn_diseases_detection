@@ -2,12 +2,13 @@
 # ----------------------------------- Model Trainer ---------------------------------
 #####################################################################################
 
-#########################
-# ---- Depdendencies ----
-#########################
+########################
+# ---- Dependencies ----
+########################
 
 import os
 import pathlib
+import ast
 from core.load_env import EnvLoader
 import numpy as np
 import mlflow
@@ -19,9 +20,9 @@ from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from pipelines.preprocess import split_and_balance_dataset
 from builders.builders import ModelBuilder
 
-##########################
+############################
 # ---- MLflow Callbacks ----
-##########################
+############################
 
 class MLflowKerasTunerCallback(Callback):
     """
@@ -65,7 +66,7 @@ class MLflowKerasTunerCallback(Callback):
 # ---- Fine Tunner ----
 #######################
 
-def train(backbone_name='VGG16', split_ratios=(0.7, 0.15, 0.15), balanced=True):
+def train(backbone_name='VGG16', split_ratios=(0.7, 0.15, 0.15), balanced="oversample"):
     """
     Función principal para orquestar el proceso de entrenamiento y la búsqueda
     de hiperparámetros con Keras Tuner, rastreando los experimentos con MLflow.
@@ -100,7 +101,24 @@ def train(backbone_name='VGG16', split_ratios=(0.7, 0.15, 0.15), balanced=True):
     PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
     DATA_DIR = PROJECT_ROOT / 'data' / 'raw'
     
-    IMAGE_SIZE = tuple(env_vars['IMAGE_SIZE']) #(224, 224)
+    try:
+        image_size_str = env_vars.get("IMAGE_SIZE", "(224, 224)")
+
+        if not image_size_str or len(image_size_str.strip()) == 0:
+            raise ValueError("IMAGE_SIZE is empty in .env file.")
+
+        # ast.literal_eval evalúa la cadena de forma segura
+        IMAGE_SIZE = ast.literal_eval(image_size_str)
+        
+        # Añadir una verificación de seguridad para asegurar que la tupla tiene 2 elementos
+        if not isinstance(IMAGE_SIZE, (tuple, list)) or len(IMAGE_SIZE) != 2:
+            raise TypeError("IMAGE_SIZE must be a sequence of length 2.")
+
+    except (ValueError, SyntaxError, TypeError) as e:
+        print(f"❌ Error: La variable de entorno IMAGE_SIZE no es válida. Usando valor por defecto. Error: {e}")
+        IMAGE_SIZE = (224, 224)
+
+
     NUM_CLASSES = int(env_vars['NUM_CLASSES']) #4
     BATCH_SIZE = int(env_vars['BATCH_SIZE']) #32
     
