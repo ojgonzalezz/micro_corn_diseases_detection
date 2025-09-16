@@ -6,7 +6,7 @@ import tensorflow as tf
 
 # --- Config ---
 IMG_SIZE = (224, 224)  # ajusta al tamaño de tu entrenamiento
-MODEL_PATH = "models/fine_tuned_best_model.keras"  
+MODEL_PATH = "models/best_VGG16.keras"  
 LABELS_PATH = "app/labels.json"    # opcional
 
 # --- Carga de modelo ---
