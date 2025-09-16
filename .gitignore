@@ -1,0 +1,18 @@
+# Archivos temporales de Python y Jupyter
+__pycache__/
+.ipynb_checkpoints/
+*.pyc
+
+# Archivos de logs o de ejecución
+*.log
+*.tmp
+
+# Archivos de configuración local
+.vscode/
+.env
+
+# Archivos del sistema
+.DS_Store
+
+# Carpeta de imagenes
+dataset_split_balanced/ 

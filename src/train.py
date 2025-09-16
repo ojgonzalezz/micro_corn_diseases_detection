@@ -3,6 +3,8 @@
 import tensorflow as tf
 import pathlib
 from datetime import datetime
+import mlflow
+import mlflow.tensorflow
 
 # Importar las funciones que ya creamos en los otros archivos
 from data_pipeline import create_data_generators
@@ -13,6 +15,9 @@ import mlflow
 import mlflow.tensorflow
 
 def train():
+    
+    mlflow.tensorflow.autolog()
+
     """
     Función principal para orquestar el proceso de entrenamiento del modelo,
     incluyendo callbacks para un entrenamiento robusto.
@@ -22,9 +27,9 @@ def train():
     SPLIT_DATA_DIR = PROJECT_ROOT / 'dataset_split_balanced'
     
     IMAGE_SIZE = (224, 224)
-    BATCH_SIZE = 32
+    BATCH_SIZE = 32 
     NUM_CLASSES = 4
-    EPOCHS = 20
+    EPOCHS = 30
 
    # ---------- MLflow: tracking + experiment ----------
     # Usa una carpeta persistente en tu Drive
@@ -84,24 +89,24 @@ def train():
     print("\n" + "="*70)
     print("🚀 ¡Comenzando el entrenamiento!")
     print("="*70)
-    
-    with mlflow.start_run(run_name="vgg16_baseline_run"):
+
+    with mlflow.start_run(run_name="vgg16_baseline"):
         history = model.fit(
             train_generator,
-            steps_per_epoch=max(1, train_generator.samples // BATCH_SIZE),
+            steps_per_epoch=train_generator.samples // BATCH_SIZE,
             epochs=EPOCHS,
             validation_data=validation_generator,
-            validation_steps=max(1, validation_generator.samples // BATCH_SIZE),
-            callbacks=[checkpoint_cb, early_stopping_cb]
+            validation_steps=validation_generator.samples // BATCH_SIZE,
+            callbacks=[checkpoint_cb, early_stopping_cb] # <-- AQUÍ SE AÑADEN LOS CALLBACKS
         )
 
-        # Log extra params (autolog ya registra bastante)
+        # Guardar el modelo final como artefacto de MLflow
+        mlflow.keras.log_model(model, "final_model")
+
+        # También puedes registrar hiperparámetros o métricas manualmente si quieres
         mlflow.log_param("batch_size", BATCH_SIZE)
         mlflow.log_param("epochs", EPOCHS)
         mlflow.log_param("image_size", IMAGE_SIZE)
-
-        # (Opcional) Loguear el modelo final manualmente
-        mlflow.keras.log_model(model, "final_model")
 
     print("\n" + "="*70)
     print("✅ ¡Entrenamiento completado exitosamente!")
