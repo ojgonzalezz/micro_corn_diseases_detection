@@ -11,6 +11,8 @@ from data_pipeline import create_data_generators
 from model import build_model
 # Importar los Callbacks necesarios
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
+import mlflow
+import mlflow.tensorflow
 
 def train():
     
@@ -28,6 +30,15 @@ def train():
     BATCH_SIZE = 32 
     NUM_CLASSES = 4
     EPOCHS = 30
+
+   # ---------- MLflow: tracking + experiment ----------
+    # Usa una carpeta persistente en tu Drive
+    MLFLOW_DIR = PROJECT_ROOT / "mlruns"
+    MLFLOW_DIR.mkdir(parents=True, exist_ok=True)
+    mlflow.set_tracking_uri(f"file:{MLFLOW_DIR}")            
+    mlflow.set_experiment("vgg16_baseline")                  
+    mlflow.tensorflow.autolog()                              
+    # ----------------------------------------------------
 
     print("Iniciando el proceso de entrenamiento...")
     print(f"Dataset: {SPLIT_DATA_DIR.name}")
