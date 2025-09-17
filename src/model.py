@@ -26,7 +26,7 @@ def build_model(input_shape=(224, 224, 3), num_classes=4):
     base_model.trainable = False
     
     print(f"✅ Modelo base VGG16 cargado y congelado. Capas: {len(base_model.layers)}")
-    # base_model.summary() # Descomenta para ver la arquitectura detallada de VGG16
+    base_model.summary() # Descomenta para ver la arquitectura detallada de VGG16
 
     # --- 3. Añadir Nuevas Capas de Clasificación ---
     # Creamos un nuevo modelo secuencial que comienza donde termina el modelo base.

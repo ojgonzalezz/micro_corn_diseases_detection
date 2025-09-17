@@ -47,7 +47,7 @@ def train():
         input_shape=(IMAGE_SIZE[0], IMAGE_SIZE[1], 3),
         num_classes=NUM_CLASSES
     )
-    # model.summary() # Puedes descomentar esto si quieres ver el resumen cada vez
+    model.summary() # Puedes descomentar esto si quieres ver el resumen cada vez
 
     # --- 4. CONFIGURAR CALLBACKS ---
     print("\nConfigurando Callbacks...")
