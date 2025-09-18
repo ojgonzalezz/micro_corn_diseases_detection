@@ -10,7 +10,7 @@ import tensorflow as tf
 from tensorflow.keras import layers, models, Model
 import keras_tuner as kt
 from tensorflow.keras.initializers import HeNormal, GlorotUniform, LecunNormal
-from builders.base_models import load_vgg16, load_resnet50, load_yolo
+from src.builders.base_models import load_vgg16, load_resnet50, load_yolo
 
 #########################
 # ---- Model Builder ----

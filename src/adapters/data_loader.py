@@ -14,15 +14,15 @@ from dotenv import load_dotenv
 
 # Environment variables loading
 sys.path.append(os.path.abspath(os.path.join("..", "src")))
-from core.load_env import EnvLoader
-from utils.utils import *
+from src.core.load_env import EnvLoader
+from src.utils.utils import *
 
 ################################
 # ---- InMemory Data loader ----
 ################################
 
 # Data folder detections
-from core.path_finder import ProjectPaths
+from src.core.path_finder import ProjectPaths
 
 pp = ProjectPaths()
 data_paths = pp.get_structure()

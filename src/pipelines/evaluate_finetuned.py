@@ -14,9 +14,9 @@ import seaborn as sns
 from sklearn.metrics import classification_report, confusion_matrix
 import argparse 
 
-from pipelines.preprocess import split_and_balance_dataset
-from utils.data_augmentator import DataAugmenter
-from utils.image_modifier import ImageAugmentor
+from src.pipelines.preprocess import split_and_balance_dataset
+from src.utils.data_augmentator import DataAugmenter
+from src.utils.image_modifier import ImageAugmentor
 
 ##########################
 # ---- Evaluate model ----

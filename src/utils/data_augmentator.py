@@ -15,7 +15,7 @@ import cv2
 from PIL import Image
 
 # Asume que el archivo image_modifier.py está en la misma carpeta o en una ruta accesible.
-from utils.image_modifier import ImageAugmentor
+from src.utils.image_modifier import ImageAugmentor
 
 ##########################
 # ---- Data Augmenter ----

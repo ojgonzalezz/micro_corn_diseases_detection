@@ -10,7 +10,7 @@ import tensorflow as tf
 import pathlib
 import matplotlib.pyplot as plt
 
-from utils.utils import *
+from src.utils.utils import *
 
 ##################################
 # ---- Data loader generators ----

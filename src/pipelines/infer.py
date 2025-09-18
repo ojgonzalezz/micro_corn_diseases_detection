@@ -7,12 +7,12 @@
 ##########################
 
 import io 
-import json
+import pathlib
 import numpy as np
 from PIL import Image
 import tensorflow as tf
 
-from core.load_env import EnvLoader
+from src.core.load_env import EnvLoader
 from src.utils.errors import *
 
 #####################
@@ -21,9 +21,10 @@ from src.utils.errors import *
 
 # ---- Config ----
 env_vars = EnvLoader().get_all()
+PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
 IMG_SIZE = env_vars.get("IMAGE_SIZE", (224, 224))
 try:
-    MODEL_PATH = "models/best_VGG16.keras" 
+    MODEL_PATH = PROJECT_ROOT / "models" / "Exported" / "best_VGG16.keras" 
 except NoModelToLoadError:
     pass
 

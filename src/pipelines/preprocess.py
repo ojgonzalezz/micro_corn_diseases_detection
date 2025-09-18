@@ -14,10 +14,10 @@ from tqdm import tqdm
 import collections
 import numpy as np
 from PIL import Image
-from adapters.data_loader import load_raw_data
-from utils.image_modifier import ImageAugmentor
-from utils.data_augmentator import DataAugmenter
-from core.load_env import EnvLoader
+from src.adapters.data_loader import load_raw_data
+from src.utils.image_modifier import ImageAugmentor
+from src.utils.data_augmentator import DataAugmenter
+from src.core.load_env import EnvLoader
 
 
 ####################################

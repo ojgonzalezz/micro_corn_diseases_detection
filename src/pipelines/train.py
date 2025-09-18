@@ -9,7 +9,7 @@
 import os
 import pathlib
 import ast
-from core.load_env import EnvLoader
+from src.core.load_env import EnvLoader
 import numpy as np
 import mlflow
 import mlflow.keras as mlflow_keras
@@ -17,8 +17,8 @@ import tensorflow as tf
 import keras_tuner as kt
 from tensorflow.keras.callbacks import Callback
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
-from pipelines.preprocess import split_and_balance_dataset
-from builders.builders import ModelBuilder
+from src.pipelines.preprocess import split_and_balance_dataset
+from src.builders.builders import ModelBuilder
 
 
 #######################
