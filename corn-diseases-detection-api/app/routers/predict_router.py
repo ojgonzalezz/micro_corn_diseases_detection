@@ -6,11 +6,15 @@
 # ---- Depedendencies ----
 ##########################
 
+import sys 
+import pathlib
 from fastapi import APIRouter, File, UploadFile
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from src.pipelines.infer import predict
 
+PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent.parent.parent 
+sys.path.append(str(PROJECT_ROOT))
+from src.pipelines.infer import predict
 from src.core.load_env import EnvLoader
 
 ################

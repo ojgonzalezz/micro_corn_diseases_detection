@@ -140,3 +140,13 @@ Para replicar el entorno de desarrollo, es necesario instalar las versiones comp
       * **Comentario:** Este comando descarga las versiones de `torch`, `torchvision` y `torchaudio` compiladas para la versión de CUDA 12.4, asegurando que el soporte de la GPU esté habilitado.
 
 -----
+
+
+
+NOTAS:
+para levantar el aplicativo en local, dirifase a:
+corn-diseases-detection-api
+
+ejecute:
+
+uvicorn main:app --reload

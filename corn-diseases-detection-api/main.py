@@ -6,16 +6,22 @@
 # ---- Depedendencies ----
 ##########################
 
+import pathlib
+import sys
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers.predict_router import router as predict_router
 
+PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent.parent.parent 
+sys.path.append(str(PROJECT_ROOT))
+from app.routers.predict_router import router as predict_router
 from src.core.load_env import EnvLoader
 
 
 ################
 # ---- main ----
 ################
+
+
 
 app = FastAPI(title="Maize Disease API", version="1.0.0")
 app.add_middleware(
