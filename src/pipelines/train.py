@@ -20,47 +20,6 @@ from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from pipelines.preprocess import split_and_balance_dataset
 from builders.builders import ModelBuilder
 
-############################
-# ---- MLflow Callbacks ----
-############################
-
-class MLflowKerasTunerCallback(Callback):
-    """
-    Callback personalizado para MLflow que registra cada 'trial' de Keras Tuner
-    como un 'run' individual de MLflow, incluyendo parámetros y métricas por epoch.
-    """
-    def __init__(self, tuner, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.tuner = tuner
-        self.mlflow_runs = {}
-        self.current_trial_id = None
-
-    def on_trial_begin(self, trial):
-        # Inicia un nuevo run en MLflow (anidado dentro del experimento)
-        run = mlflow.start_run(nested=True, run_name=f"trial-{trial.trial_id}")
-        self.mlflow_runs[trial.trial_id] = run
-        self.current_trial_id = trial.trial_id
-
-        # Loggea los hiperparámetros del trial en MLflow
-        for hp_name, hp_value in trial.hyperparameters.values.items():
-            mlflow.log_param(hp_name, hp_value)
-
-    def on_epoch_end(self, epoch, logs=None):
-        """
-        Registra métricas por epoch (accuracy, loss, val_accuracy, val_loss, etc.)
-        """
-        if logs:
-            for metric_name, metric_value in logs.items():
-                mlflow.log_metric(metric_name, metric_value, step=epoch)
-
-    def on_trial_end(self, trial):
-        """
-        Cierra el run de MLflow al finalizar el trial
-        """
-        mlflow.end_run()
-        
-        self.current_trial_id = None
-
 
 #######################
 # ---- Fine Tunner ----
