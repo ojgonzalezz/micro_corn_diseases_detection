@@ -22,7 +22,7 @@ from src.utils.image_modifier import ImageAugmentor
 # ---- Evaluate model ----
 ##########################
 
-def evaluate_model(model_filename: str):
+def evaluate_model(model_filename: str, split_ratios=(0.7, 0.15, 0.15)):
     """
     Carga un modelo específico y lo evalúa en el conjunto de prueba.
     Genera y muestra una matriz de confusión y un reporte de clasificación.
@@ -45,7 +45,7 @@ def evaluate_model(model_filename: str):
     # Cargar el dataset usando la función de preprocesamiento
     raw_dataset = split_and_balance_dataset(
         # Usamos 1.0 para el ratio de prueba porque solo necesitamos este set
-        split_ratios=(0.0, 0.0, 1.0),
+        split_ratios=split_ratios,
         balanced=True
     )
     
