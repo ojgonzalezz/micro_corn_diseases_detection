@@ -9,7 +9,7 @@ import tensorflow as tf
 import keras_tuner as kt
 from tensorflow.keras.callbacks import Callback
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
-from src.preprocess import split_and_balance_dataset
+from preprocessing.preprocess import split_and_balance_dataset
 from src.builders import ModelBuilder
 
 

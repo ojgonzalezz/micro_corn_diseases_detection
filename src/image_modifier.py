@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from PIL import Image
 
-
+# ---- Image Modifier ----
 class ImageAugmentor:
     def __init__(self):
         pass
