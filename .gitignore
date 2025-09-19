@@ -17,6 +17,9 @@ __pycache__/
 # Carpeta de imagenes
 dataset_split_balanced/ 
 
+# Carpeta de datos
+data/
+
 #  explicit mlflow runs
 models/exported/
 models/exported_bkp/
