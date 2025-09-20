@@ -23,3 +23,6 @@ data/
 models/exported/
 models/exported_bkp/
 models/mlruns/
+
+# AWS credentials
+AWS_files/
