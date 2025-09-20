@@ -1,4 +1,4 @@
-# Corn Diseases Detection 🌽
+# Corn Diseases Detection
 
 Este proyecto es una aplicación web diseñada para la **detección y clasificación de enfermedades en hojas de maíz**. Permite a los usuarios subir una imagen de una hoja y recibir un diagnóstico instantáneo con un alto grado de confianza.
 
