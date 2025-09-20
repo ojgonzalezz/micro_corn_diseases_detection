@@ -9,7 +9,6 @@ __pycache__/
 
 # Archivos de configuración local
 .vscode/
-.env
 
 # Archivos del sistema
 .DS_Store
