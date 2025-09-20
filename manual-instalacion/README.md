@@ -29,7 +29,7 @@ El proyecto está organizado en las siguientes carpetas y archivos clave:
 
 -----
 
-## Demo y despliegue 🚀
+## Demo y despliegue
 
 La aplicación está desplegada y puede ser probada en vivo a través de una URL de AWS S3. La demo permite a los usuarios experimentar la funcionalidad completa del clasificador de enfermedades.
 
