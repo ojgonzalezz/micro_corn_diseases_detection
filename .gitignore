@@ -9,10 +9,20 @@ __pycache__/
 
 # Archivos de configuración local
 .vscode/
-.env
 
 # Archivos del sistema
 .DS_Store
 
 # Carpeta de imagenes
 dataset_split_balanced/ 
+
+# Carpeta de datos
+data/
+
+#  explicit mlflow runs
+models/exported/
+models/exported_bkp/
+models/mlruns/
+
+# AWS credentials
+AWS_files/
