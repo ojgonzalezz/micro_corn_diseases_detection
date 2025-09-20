@@ -263,4 +263,4 @@ def train(backbone_name='VGG16', split_ratios=(0.7, 0.15, 0.15), balanced="overs
     return tuner, (X_test, y_test)
 
 if __name__ == '__main__':
-    train_history, trained_model, test_data = train()
+    tuner, (X_test, y_test) = train()

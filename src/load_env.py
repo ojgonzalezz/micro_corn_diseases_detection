@@ -3,7 +3,7 @@ from pathlib import Path
 from dotenv import load_dotenv, dotenv_values
 from typing import Dict, Union, Optional
 
-
+# ---- Enironment variables loader ----
 class EnvLoader:
     def __init__(self, env_file: Optional[str] = None):
         # Por defecto: src/core/.env (archivo junto a este módulo)
